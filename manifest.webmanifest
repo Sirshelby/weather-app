@@ -1,0 +1,21 @@
+{
+  "name": "Weather Now",
+  "short_name": "Weather",
+  "description": "Current conditions, hourly and 7-day forecasts, saved places and side-by-side comparisons.",
+  "id": "./",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#02012c",
+  "theme_color": "#02012c",
+  "categories": ["weather", "utilities"],
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Compare locations", "url": "./?view=compare", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
