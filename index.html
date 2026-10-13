@@ -1,66 +1,318 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- displays site properly based on user's device -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Weather Now — current conditions, hourly and 7‑day forecasts, powered by Open‑Meteo.">
+  <meta name="theme-color" content="#02012c" id="meta-theme-color">
+  <meta name="color-scheme" content="dark light">
 
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png">
-  
-  <title>Frontend Mentor | Weather app</title>
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Weather Now">
 
-  <!-- Feel free to remove these styles or customise in your own stylesheet 👍 -->
-  <style>
-    .attribution { font-size: 0.6875rem; text-align: center; }
-    .attribution a { color: hsl(228, 45%, 44%); }
-  </style>
+  <title>Weather Now</title>
+
+  <!-- Set the theme before first paint so there is no flash of the wrong theme -->
+  <script>
+    (function () {
+      try {
+        var pref = localStorage.getItem('wn:theme') || 'auto';
+        var theme = pref;
+        if (pref === 'auto') {
+          var last = JSON.parse(localStorage.getItem('wn:lastTheme') || 'null');
+          if (last) theme = last;
+          else { var h = new Date().getHours(); theme = h >= 7 && h < 19 ? 'light' : 'dark'; }
+        }
+        document.documentElement.dataset.theme = theme;
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="preload" href="./assets/fonts/DM_Sans/DMSans-VariableFont_opsz,wght.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="./css/styles.css">
+  <script type="module" src="./js/main.js"></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-  Units
+  <!-- Animated, condition-aware background (decorative) -->
+  <div class="sky" id="sky" aria-hidden="true" data-scene="clear-day"></div>
 
-  Switch to Imperial/Metric
+  <div class="page">
+    <header class="site-header">
+      <a href="./" class="logo" aria-label="Weather Now home">
+        <img class="logo__dark" src="./assets/images/logo.svg" alt="" width="197" height="40">
+        <img class="logo__light" src="./assets/images/logo-light.svg" alt="" width="197" height="40">
+      </a>
 
-  Temperature
+      <div class="header-actions">
+        <button class="btn btn--ghost install-btn" id="install-btn" type="button" hidden>
+          <span class="icon icon--download" aria-hidden="true"></span>
+          <span>Install</span>
+        </button>
 
-  Celsius (°C)
-  Fahrenheit (°F)
+        <!-- Theme -->
+        <div class="menu" data-menu>
+          <button class="btn btn--ghost menu__trigger" type="button" id="theme-trigger"
+                  aria-haspopup="menu" aria-expanded="false" aria-controls="theme-menu">
+            <span class="icon icon--theme" aria-hidden="true"></span>
+            <span class="visually-hidden-mobile" id="theme-label">Auto</span>
+            <span class="icon icon--chevron" aria-hidden="true"></span>
+          </button>
+          <div class="menu__panel menu__panel--right" id="theme-menu" role="menu" aria-labelledby="theme-trigger" data-close-on-select hidden>
+            <p class="menu__heading" id="theme-heading">Theme</p>
+            <div role="group" aria-labelledby="theme-heading">
+              <button class="menu__item" role="menuitemradio" data-theme-choice="auto" aria-checked="true">
+                <span>Auto <small class="menu__hint">follows sunrise &amp; sunset</small></span>
+              </button>
+              <button class="menu__item" role="menuitemradio" data-theme-choice="light" aria-checked="false">Light</button>
+              <button class="menu__item" role="menuitemradio" data-theme-choice="dark" aria-checked="false">Dark</button>
+            </div>
+          </div>
+        </div>
 
-  Wind Speed
+        <!-- Units -->
+        <div class="menu" data-menu>
+          <button class="btn btn--ghost menu__trigger" type="button" id="units-trigger"
+                  aria-haspopup="menu" aria-expanded="false" aria-controls="units-menu">
+            <span class="icon icon--units" aria-hidden="true"></span>
+            <span>Units</span>
+            <span class="icon icon--chevron" aria-hidden="true"></span>
+          </button>
+          <div class="menu__panel menu__panel--right" id="units-menu" role="menu" aria-labelledby="units-trigger" hidden>
+            <button class="menu__item menu__item--action" role="menuitem" id="units-switch">Switch to Imperial</button>
 
-  km/h
-  mph
+            <p class="menu__heading" id="u-temp">Temperature</p>
+            <div role="group" aria-labelledby="u-temp">
+              <button class="menu__item" role="menuitemradio" data-unit="temperature" data-value="celsius">Celsius (°C)</button>
+              <button class="menu__item" role="menuitemradio" data-unit="temperature" data-value="fahrenheit">Fahrenheit (°F)</button>
+            </div>
+            <hr class="menu__divider">
+            <p class="menu__heading" id="u-wind">Wind Speed</p>
+            <div role="group" aria-labelledby="u-wind">
+              <button class="menu__item" role="menuitemradio" data-unit="wind" data-value="kmh">km/h</button>
+              <button class="menu__item" role="menuitemradio" data-unit="wind" data-value="mph">mph</button>
+            </div>
+            <hr class="menu__divider">
+            <p class="menu__heading" id="u-precip">Precipitation</p>
+            <div role="group" aria-labelledby="u-precip">
+              <button class="menu__item" role="menuitemradio" data-unit="precipitation" data-value="mm">Millimeters (mm)</button>
+              <button class="menu__item" role="menuitemradio" data-unit="precipitation" data-value="inch">Inches (in)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
 
-  Precipitation
+    <main id="main" tabindex="-1">
+      <h1 class="headline">How’s the sky looking today?</h1>
 
-  Millimeters (mm)
-  Inches (in)
+      <!-- Search -->
+      <form class="search" id="search-form" role="search" autocomplete="off" novalidate>
+        <div class="search__field">
+          <span class="icon icon--search search__icon" aria-hidden="true"></span>
+          <label for="search-input" class="visually-hidden">Search for a place</label>
+          <input id="search-input" class="search__input" type="search" placeholder="Search for a place..."
+                 role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results"
+                 enterkeyhint="search" spellcheck="false">
+          <button type="button" class="icon-btn search__voice" id="voice-btn" aria-label="Search by voice" aria-pressed="false" hidden>
+            <span class="icon icon--mic" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="icon-btn search__locate" id="locate-btn" aria-label="Use my current location">
+            <span class="icon icon--locate" aria-hidden="true"></span>
+          </button>
+          <ul class="search__results" id="search-results" role="listbox" aria-label="Matching places" hidden></ul>
+        </div>
+        <button class="btn btn--primary search__submit" type="submit">Search</button>
+      </form>
+      <p class="voice-status" id="voice-status" role="status" aria-live="polite"></p>
 
-  How's the sky looking today?
+      <!-- Favorites -->
+      <section class="favorites" id="favorites" aria-labelledby="favorites-title" hidden>
+        <h2 class="visually-hidden" id="favorites-title">Saved locations</h2>
+        <ul class="favorites__list" id="favorites-list"></ul>
+      </section>
 
-  Search for a city, e.g., New York
-  Search
+      <!-- View switcher -->
+      <div class="tabs" role="tablist" aria-label="View">
+        <button class="tabs__tab" role="tab" id="tab-forecast" aria-controls="panel-forecast" aria-selected="true">Forecast</button>
+        <button class="tabs__tab" role="tab" id="tab-compare" aria-controls="panel-compare" aria-selected="false" tabindex="-1">
+          Compare <span class="tabs__count" id="compare-count" hidden></span>
+        </button>
+      </div>
 
-  Feels like
-  <!-- Insert temperature here -->
+      <p class="status-message" id="no-results" role="status" hidden>No search result found!</p>
 
-  Humidity
-  <!-- Insert humidity here -->
+      <!-- Error state -->
+      <section class="error-state" id="error-state" hidden aria-labelledby="error-title">
+        <span class="icon icon--error error-state__icon" aria-hidden="true"></span>
+        <h2 id="error-title" class="error-state__title">Something went wrong</h2>
+        <p class="error-state__text" id="error-text">We couldn’t connect to the server (API error). Please try again in a few moments.</p>
+        <button class="btn btn--ghost" type="button" id="retry-btn">
+          <span class="icon icon--retry" aria-hidden="true"></span> Retry
+        </button>
+      </section>
 
-  Wind
-  <!-- Insert wind here -->   
-  
-  Precipitation
-  <!-- Insert precipitation here -->
+      <!-- ===================== FORECAST VIEW ===================== -->
+      <div class="panel" id="panel-forecast" role="tabpanel" aria-labelledby="tab-forecast">
+        <div class="dashboard" id="dashboard" aria-busy="true">
+          <div class="dashboard__main">
+            <!-- Current conditions -->
+            <section class="today" id="today" aria-labelledby="today-place">
+              <div class="today__scene" aria-hidden="true"></div>
+              <div class="today__loading" aria-hidden="true">
+                <span class="dots"><i></i><i></i><i></i></span>
+                <span>Loading...</span>
+              </div>
+              <div class="today__content">
+                <div class="today__place-wrap">
+                  <h2 class="today__place" id="today-place">—</h2>
+                  <p class="today__date" id="today-date"></p>
+                  <p class="today__condition" id="today-condition"></p>
+                </div>
+                <div class="today__reading">
+                  <img class="today__icon" id="today-icon" src="./assets/images/icon-sunny.webp" alt="" width="120" height="120">
+                  <p class="today__temp" id="today-temp">—</p>
+                </div>
+              </div>
+              <button class="fav-toggle" id="fav-toggle" type="button" aria-pressed="false" aria-label="Save location">
+                <span class="icon icon--star" aria-hidden="true"></span>
+              </button>
+              <button class="compare-add" id="compare-add" type="button">
+                <span class="icon icon--plus" aria-hidden="true"></span><span>Compare</span>
+              </button>
+            </section>
 
-  Daily forecast
-  <!-- Insert daily forecast for the next 7 days here -->
+            <!-- Metrics -->
+            <section aria-label="Current details">
+              <dl class="metrics" id="metrics">
+                <div class="metric"><dt>Feels Like</dt><dd data-metric="feels">—</dd></div>
+                <div class="metric"><dt>Humidity</dt><dd data-metric="humidity">—</dd></div>
+                <div class="metric"><dt>Wind</dt><dd data-metric="wind">—</dd></div>
+                <div class="metric"><dt>Precipitation</dt><dd data-metric="precip">—</dd></div>
+                <div class="metric metric--uv">
+                  <dt>UV Index</dt>
+                  <dd><span data-metric="uv">—</span> <span class="uv-badge" data-metric="uv-label"></span></dd>
+                  <div class="uv-scale" aria-hidden="true"><span class="uv-scale__marker" id="uv-marker"></span></div>
+                </div>
+                <div class="metric"><dt>Visibility</dt><dd data-metric="visibility">—</dd></div>
+                <div class="metric"><dt>Pressure</dt><dd data-metric="pressure">—</dd></div>
+                <div class="metric"><dt>Cloud Cover</dt><dd data-metric="cloud">—</dd></div>
+              </dl>
+            </section>
 
-  Hourly forecast
-  <!-- Insert hourly forecast for the selected day here -->
+            <!-- Sunrise / sunset -->
+            <section class="sun card" id="sun" aria-labelledby="sun-title">
+              <div class="sun__head">
+                <h2 class="section-title" id="sun-title">Sunrise &amp; sunset</h2>
+                <p class="sun__daylight" id="sun-daylight"></p>
+              </div>
+              <div class="sun__body">
+                <svg class="sun__arc" viewBox="0 0 320 150" role="img" aria-labelledby="sun-arc-desc" preserveAspectRatio="xMidYMax meet">
+                  <title id="sun-arc-desc">Sun position between sunrise and sunset</title>
+                  <defs>
+                    <linearGradient id="arc-fill" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0" stop-color="var(--sun-glow)" stop-opacity=".45"/>
+                      <stop offset="1" stop-color="var(--sun-glow)" stop-opacity="0"/>
+                    </linearGradient>
+                    <clipPath id="arc-progress-clip"><rect id="arc-clip-rect" x="0" y="0" width="0" height="150"/></clipPath>
+                  </defs>
+                  <line x1="0" y1="130" x2="320" y2="130" class="sun__horizon"/>
+                  <path d="M20 130 A140 120 0 0 1 300 130" class="sun__track"/>
+                  <path d="M20 130 A140 120 0 0 1 300 130 Z" fill="url(#arc-fill)" clip-path="url(#arc-progress-clip)"/>
+                  <path d="M20 130 A140 120 0 0 1 300 130" class="sun__progress" clip-path="url(#arc-progress-clip)"/>
+                  <g id="sun-dot" class="sun__dot">
+                    <circle r="14" class="sun__dot-glow"/>
+                    <circle r="8" class="sun__dot-core"/>
+                  </g>
+                </svg>
+                <div class="sun__times">
+                  <div class="sun__time">
+                    <span class="icon icon--sunrise" aria-hidden="true"></span>
+                    <span class="sun__label">Sunrise</span>
+                    <strong id="sunrise-time">—</strong>
+                  </div>
+                  <p class="sun__now" id="sun-now"></p>
+                  <div class="sun__time sun__time--end">
+                    <span class="icon icon--sunset" aria-hidden="true"></span>
+                    <span class="sun__label">Sunset</span>
+                    <strong id="sunset-time">—</strong>
+                  </div>
+                </div>
+              </div>
+            </section>
 
-  <footer class="attribution">
-    Challenge by <a href="https://www.frontendmentor.io?ref=challenge">Frontend Mentor</a>. 
-    Coded by <a href="#">Your Name Here</a>.
-  </footer>
+            <!-- Daily -->
+            <section class="daily" aria-labelledby="daily-title">
+              <h2 class="section-title" id="daily-title">Daily forecast</h2>
+              <ol class="daily__list" id="daily-list"></ol>
+            </section>
+          </div>
+
+          <!-- Hourly -->
+          <section class="hourly card" aria-labelledby="hourly-title">
+            <div class="hourly__head">
+              <h2 class="section-title" id="hourly-title">Hourly forecast</h2>
+              <div class="menu" data-menu>
+                <button class="btn btn--subtle menu__trigger" type="button" id="day-trigger"
+                        aria-haspopup="menu" aria-expanded="false" aria-controls="day-menu">
+                  <span id="day-label">–</span>
+                  <span class="icon icon--chevron" aria-hidden="true"></span>
+                </button>
+                <div class="menu__panel menu__panel--right menu__panel--days" id="day-menu" role="menu" aria-labelledby="day-trigger" data-close-on-select hidden></div>
+              </div>
+            </div>
+            <ol class="hourly__list" id="hourly-list" tabindex="0" aria-label="Hourly temperatures"></ol>
+          </section>
+        </div>
+      </div>
+
+      <!-- ===================== COMPARE VIEW ===================== -->
+      <div class="panel" id="panel-compare" role="tabpanel" aria-labelledby="tab-compare" hidden>
+        <div class="compare-intro">
+          <div>
+            <h2 class="section-title">Compare locations</h2>
+            <p class="muted">Add up to 4 places from search, your saved locations, or the “Compare” button on the forecast.</p>
+          </div>
+          <div class="compare-quick" id="compare-quick"></div>
+        </div>
+        <div class="compare-grid" id="compare-grid" aria-live="polite"></div>
+        <p class="compare-empty" id="compare-empty">
+          Nothing to compare yet. Search for a place and press <strong>Compare</strong>, or pick from your saved locations above.
+        </p>
+      </div>
+    </main>
+
+    <footer class="attribution">
+      Weather data by <a href="https://open-meteo.com/">Open-Meteo</a>.
+      Challenge by <a href="https://www.frontendmentor.io?ref=challenge">Frontend Mentor</a>.
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <template id="tpl-compare-card">
+    <article class="cmp card">
+      <header class="cmp__head">
+        <div>
+          <h3 class="cmp__place"></h3>
+          <p class="cmp__local muted"></p>
+        </div>
+        <button class="icon-btn cmp__remove" type="button"><span class="icon icon--close" aria-hidden="true"></span></button>
+      </header>
+      <div class="cmp__now">
+        <img class="cmp__icon" alt="" width="64" height="64">
+        <p class="cmp__temp"></p>
+      </div>
+      <p class="cmp__cond"></p>
+      <dl class="cmp__stats"></dl>
+      <ol class="cmp__days"></ol>
+    </article>
+  </template>
 </body>
 </html>
